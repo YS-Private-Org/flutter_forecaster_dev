@@ -1,5 +1,5 @@
 use augurs::{
-    ets::AutoETS,
+    ets::{trend::AutoETSTrendModel, AutoETS, AutoSpec},
     forecaster::{
         transforms::{LinearInterpolator, Logit, MinMaxScaler},
         Forecaster, Transformer,
@@ -18,14 +18,15 @@ pub fn augurs_forecaster(csv_data: Vec<u8>, frequency: String) -> std::string::S
 
     let data = sales.as_slice();
 
-    let ets = AutoETS::non_seasonal().into_trend_model();
-    let mstl = MSTLModel::new(vec![n_frequency], ets);
+    let ets = AutoETS::new(12, "ZZN").unwrap();
+    let ets_trend = ets.into_trend_model();
+    let mstl = MSTLModel::new(vec![n_frequency],ets_trend);
 
     // Set up the transformers.
     let transformers = vec![
         LinearInterpolator::new().boxed(),
         MinMaxScaler::new().boxed(),
-        Logit::new().boxed(),
+        // Logit::new().boxed(),
     ];
 
     // Create a forecaster using the transforms.
@@ -37,10 +38,14 @@ pub fn augurs_forecaster(csv_data: Vec<u8>, frequency: String) -> std::string::S
     // Generate a limited number of predictions (X amount) to focus on short-term accuracy.
     // Short-term predictions are preferred to prevent large deviations
     let in_sample = forecaster
-        .predict(3, 0.95)
+        .predict(4, 0.99)
         .expect("in-sample predictions should work");
 
-    let intervals = in_sample.intervals.map(|forecast| {
+    let predictions: Vec<_> = in_sample.point.iter().cloned().collect();
+    let intervals: Vec<augurs::ForecastIntervals> =
+        in_sample.intervals.iter().cloned().collect();
+
+    let mut intervals_properties = intervals.iter().map(|forecast| {
         (
             format!("{:?}", forecast.level),
             format!("{:?}", forecast.upper),
@@ -48,11 +53,14 @@ pub fn augurs_forecaster(csv_data: Vec<u8>, frequency: String) -> std::string::S
         )
     });
 
-    let (confidence, upper, lower) =
-        intervals.unwrap_or(("None".to_string(), "None".to_string(), "None".to_string()));
+    let (confidence, upper, lower) = intervals_properties.next().unwrap_or((
+        "None".to_string(),
+        "None".to_string(),
+        "None".to_string(),
+    ));
 
     json!({
-        "predictions": in_sample.point,
+        "predictions": predictions,
         "confidence": confidence,
         "upper": upper,
         "lower": lower,
