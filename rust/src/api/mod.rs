@@ -1,3 +1,1 @@
-pub mod arima;
-pub mod augurs;
-pub mod utils;
+pub mod simple;
