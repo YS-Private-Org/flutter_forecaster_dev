@@ -6,5 +6,7 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-String greet({required String name}) =>
-    RustLib.instance.api.crateApiSimpleGreet(name: name);
+Future<String> augursForecaster(
+        {required List<int> csvData, required String frequency}) =>
+    RustLib.instance.api
+        .crateApiAugursAugursForecaster(csvData: csvData, frequency: frequency);
