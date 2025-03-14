@@ -23,9 +23,6 @@ class AugurForecaster extends BaseForecaster {
 
     try {
       final saleJsonList = augurPredictionMap['predictions'] as List<dynamic>;
-      print(augurPredictionMap['confidence']);
-      print(augurPredictionMap['upper']);
-      print(augurPredictionMap['lower']);
       for (int i = 0; i < saleJsonList.length; i++) {
         final sale = saleJsonList[i];
         salePredictionList.add(

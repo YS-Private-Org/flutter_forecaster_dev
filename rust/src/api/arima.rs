@@ -12,9 +12,16 @@ pub fn predict_sales(csv_data: Vec<u8>) -> std::string::String {
 
     /// Get Sales Data Distribution
     let mean_sales = sales.iter().sum::<f64>() / sales.len() as f64;
+    let std_sales =
+        (sales.iter().map(|x| (x - mean_sales).powi(2)).sum::<f64>() / sales.len() as f64).sqrt();
+    let normalized_sales: Vec<f64> = sales.iter().map(|x| (x - mean_sales) / std_sales).collect();
 
     /// Set Maximum Lag for large dataset
-    let max_lag = Some(std::cmp::min(24, sales.len() / 2));
+    let max_lag = Some(if sales.len() > 1600 {
+        40
+    } else {
+        (sales.len() as f64).sqrt().round() as usize // Use sqrt(n) otherwise
+    });
     let acf_values = acf::acf(&sales, max_lag, false).unwrap();
 
     let cov0 = acf::acf(&sales, Some(0), true).unwrap()[0];
@@ -42,7 +49,7 @@ pub fn predict_sales(csv_data: Vec<u8>) -> std::string::String {
         q = i;
     }
 
-    let coef = estimate::fit(&sales, p, d, q).unwrap();
+    let coef = estimate::fit(&normalized_sales, p, d, q).unwrap();
 
     let intercept = coef[0]; // First coefficient is intercept
     let phi = if p > 0 { Some(&coef[1..(1 + p)]) } else { None };
@@ -52,12 +59,12 @@ pub fn predict_sales(csv_data: Vec<u8>) -> std::string::String {
         None
     };
 
-    let residuals = estimate::residuals(&sales, intercept, phi, theta).unwrap();
+    let residuals = estimate::residuals(&normalized_sales, intercept, phi, theta).unwrap();
 
     let normal = Normal::new(0.0, 0.0).unwrap();
 
     let predictions = sim::arima_forecast(
-        &sales,
+        &normalized_sales,
         1,
         phi,
         theta,
@@ -69,7 +76,7 @@ pub fn predict_sales(csv_data: Vec<u8>) -> std::string::String {
 
     let denormalized_predictions: Vec<f64> = predictions
         .iter()
-        .map(|x| x + mean_sales)
+        .map(|x| x * std_sales + mean_sales)
         .collect();
 
     json!({

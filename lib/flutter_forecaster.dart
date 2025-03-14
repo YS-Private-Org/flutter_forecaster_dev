@@ -1,4 +1,5 @@
-library;
+// ignore: unnecessary_library_name
+library flutter_forecaster;
 
-export 'src/dart/arima_forecaster.dart';
-export 'src/dart/augur_forecaster.dart';
+export 'src/rust/api/simple.dart';
+export 'src/rust/frb_generated.dart' show RustLib;

@@ -68,13 +68,13 @@ fn wire__crate__api__augurs__augurs_forecaster_impl(
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
             let api_csv_data = <Vec<u8>>::sse_decode(&mut deserializer);
-            let api__frequency = <String>::sse_decode(&mut deserializer);
+            let api_frequency = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, ()>((move || {
                     let output_ok = Result::<_, ()>::Ok(crate::api::augurs::augurs_forecaster(
                         api_csv_data,
-                        api__frequency,
+                        api_frequency,
                     ))?;
                     Ok(output_ok)
                 })())
